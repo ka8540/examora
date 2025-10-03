@@ -1,5 +1,6 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
+const axios = require("axios");
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -12,7 +13,7 @@ const fs = require("fs");
   });
 
   // Step 2: Search professor by name
-  const professorName = "kenneth martinez";
+  const professorName = "Kenneth Martinez";
   await page.waitForSelector('input[placeholder="Professor name"]');
   await page.fill('input[placeholder="Professor name"]', professorName);
   await page.keyboard.press("Enter");
@@ -98,16 +99,14 @@ const fs = require("fs");
   })
 );
 
+  // Step 7: Send to API
+    await axios.post("http://localhost:3000/api/professors", {
+    professor: professorName,
+    profile: profLink,
+    reviews: reviews,
+    });
 
-
-
-  // Step 7: Save JSON file
-  fs.writeFileSync(
-    "professor_reviews.json",
-    JSON.stringify({ professor: professorName, profile: profLink, reviews }, null, 2)
-  );
-
-  console.log(`✅ Saved ${reviews.length} reviews for ${professorName}`);
+    console.log("✅ Data sent to API and stored in DB");
 
   await browser.close();
 })();
