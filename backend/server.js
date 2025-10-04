@@ -1,16 +1,32 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
+const authMiddleware = require("./authMiddleware");
+
+dotenv.config(); 
 
 const app = express();
 app.use(bodyParser.json());
 
-// Import routes
+// Get env vars
+const userPoolId = process.env.COGNITO_USER_POOL_ID;
+const region = process.env.AWS_REGION;
+
+// Routes
+const signupRoutes = require("./signup_api");
+const loginRoutes = require("./login_api");
 const scrapeRoutes = require("./scrape/scrape_api");
 const professorRoutes = require("./professor_api");
+const confirmSignupRoutes = require("./confirm_signup_api");
 
-// Mount routes
-app.use("/scrape", scrapeRoutes);
-app.use("/api", professorRoutes);
+// Public routes (no token needed)
+app.use("/auth", signupRoutes);
+app.use("/auth", loginRoutes);
+app.use("/auth", confirmSignupRoutes);
+
+// Protected routes (require Cognito token)
+app.use("/scrape", authMiddleware(), scrapeRoutes);
+app.use("/api", authMiddleware(), professorRoutes);
 
 app.listen(3000, () => {
   console.log("🚀 Master API running on http://localhost:3000");
