@@ -25,8 +25,9 @@ app.use("/auth", loginRoutes);
 app.use("/auth", confirmSignupRoutes);
 
 // Protected routes (require Cognito token)
-app.use("/scrape", authMiddleware(), scrapeRoutes);
-app.use("/api", authMiddleware(), professorRoutes);
+app.use("/scrape", authMiddleware(userPoolId, region), scrapeRoutes);
+app.use("/api", authMiddleware(userPoolId, region), professorRoutes);
+
 
 app.listen(3000, () => {
   console.log("Master API running on http://localhost:3000");

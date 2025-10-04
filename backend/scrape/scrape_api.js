@@ -2,8 +2,14 @@ const express = require("express");
 const router = express.Router();
 const { chromium } = require("playwright");
 const axios = require("axios");
+const dotenv = require("dotenv");
+const authMiddleware = require("../authMiddleware"); 
 
-router.post("/professor", async (req, res) => {
+dotenv.config();
+const userPoolId = process.env.COGNITO_USER_POOL_ID;
+const region = process.env.AWS_REGION;
+
+router.post("/professor", authMiddleware(userPoolId, region), async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Professor name required" });
 
@@ -40,6 +46,7 @@ router.post("/professor", async (req, res) => {
 
     await page.goto(profLink, { waitUntil: "domcontentloaded", timeout: 60000 });
 
+    // scraping loop ...
     let keepLoading = true;
     while (keepLoading) {
       try {
@@ -62,12 +69,9 @@ router.post("/professor", async (req, res) => {
 
     const reviews = await page.$$eval('[class*="Rating__RatingBody"]', (nodes) =>
       nodes.map((review) => {
-        const course =
-          review.querySelector('[class*="RatingHeader__StyledClass"]')?.innerText || "N/A";
-        const date =
-          review.querySelector('[class*="RatingHeader__RatingTimeStamp"]')?.innerText || "N/A";
-        const comment =
-          review.querySelector('[class*="Comments__StyledComments"]')?.innerText || "N/A";
+        const course = review.querySelector('[class*="RatingHeader__StyledClass"]')?.innerText || "N/A";
+        const date = review.querySelector('[class*="RatingHeader__RatingTimeStamp"]')?.innerText || "N/A";
+        const comment = review.querySelector('[class*="Comments__StyledComments"]')?.innerText || "N/A";
 
         let quality = "N/A";
         let difficulty = "N/A";
@@ -88,11 +92,20 @@ router.post("/professor", async (req, res) => {
     await browser.close();
 
     // Send to professors API for storage
-    await axios.post("http://localhost:3000/api/professors", {
-      professor: name,
-      profile: profLink,
-      reviews: reviews,
-    });
+    await axios.post(
+      "http://localhost:3000/api/professors",
+      {
+        professor: name,
+        profile: profLink,
+        reviews: reviews,
+      },
+      {
+        headers: {
+          Authorization: req.headers.authorization,  // forward the client’s token
+        },
+      }
+    );
+
 
     res.json({
       message: "Professor scraped and saved",
