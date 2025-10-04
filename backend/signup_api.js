@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const AmazonCognitoIdentity = require("amazon-cognito-identity-js");
 const dotenv = require("dotenv");
-global.fetch = require("node-fetch"); // needed for Cognito lib
+global.fetch = require("node-fetch"); 
 
 dotenv.config();
 
@@ -31,19 +31,19 @@ router.post("/signup", (req, res) => {
     }),
     new AmazonCognitoIdentity.CognitoUserAttribute({
       Name: "name",
-      Value: name, // required by your User Pool schema
+      Value: name, 
     }),
   ];
 
   userPool.signUp(email, password, attributeList, null, (err, result) => {
     if (err) {
-      console.error("❌ Signup error:", err);
+      console.error("Signup error:", err);
       return res.status(400).json({ error: err.message });
     }
 
     const cognitoUser = result.user;
     res.json({
-      message: "✅ Signup successful. Confirm email with the code sent.",
+      message: "Signup successful. Confirm email with the code sent.",
       username: cognitoUser.getUsername(),
     });
   });

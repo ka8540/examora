@@ -29,5 +29,5 @@ app.use("/scrape", authMiddleware(), scrapeRoutes);
 app.use("/api", authMiddleware(), professorRoutes);
 
 app.listen(3000, () => {
-  console.log("🚀 Master API running on http://localhost:3000");
+  console.log("Master API running on http://localhost:3000");
 });

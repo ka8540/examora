@@ -95,13 +95,13 @@ router.post("/professor", async (req, res) => {
     });
 
     res.json({
-      message: "✅ Professor scraped and saved",
+      message: "Professor scraped and saved",
       professor: name,
       profile: profLink,
       reviewsCount: reviews.length,
     });
   } catch (err) {
-    console.error("❌ Scraping error:", err);
+    console.error("Scraping error:", err);
     res.status(500).json({ error: "Scraping failed", details: err.message });
   }
 });

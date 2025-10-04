@@ -78,10 +78,10 @@ router.post("/professors", async (req, res) => {
       reviews: reviewsResult.Items,
       inserted: insertedCount,
       skipped: skippedCount,
-      source: needRescrape ? "rescraped 🔄" : "cache ✅"
+      source: needRescrape ? "rescraped " : "cache "
     });
   } catch (err) {
-    console.error("❌ DynamoDB error:", err);
+    console.error("DynamoDB error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });

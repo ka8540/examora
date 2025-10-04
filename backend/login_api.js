@@ -33,12 +33,12 @@ router.post("/login", (req, res) => {
     onSuccess: (result) => {
       const token = result.getIdToken().getJwtToken();
       res.json({
-        message: "✅ Login successful",
+        message: "Login successful",
         token,
       });
     },
     onFailure: (err) => {
-      console.error("❌ Login error:", err);
+      console.error("Login error:", err);
       res.status(400).json({ error: err.message });
     },
   });

@@ -24,11 +24,11 @@ router.post("/confirm", (req, res) => {
 
   cognitoUser.confirmRegistration(code, true, (err, result) => {
     if (err) {
-      console.error("❌ Confirm error:", err);
+      console.error("Confirm error:", err);
       return res.status(400).json({ error: err.message });
     }
 
-    res.json({ message: "✅ User confirmed successfully!", result });
+    res.json({ message: "User confirmed successfully!", result });
   });
 });
 
