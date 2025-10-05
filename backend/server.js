@@ -19,6 +19,7 @@ const scrapeRoutes = require("./scrape/scrape_api");
 const professorRoutes = require("./professor_api");
 const confirmSignupRoutes = require("./confirm_signup_api");
 const sentimentRoutes = require("./professor_sentiment_api");
+const sagemakerRoutes = require("./professor_sagemaker_api");
 
 // Public routes (no token needed)
 app.use("/auth", signupRoutes);
@@ -29,6 +30,7 @@ app.use("/auth", confirmSignupRoutes);
 app.use("/scrape", authMiddleware(userPoolId, region), scrapeRoutes);
 app.use("/api", authMiddleware(userPoolId, region), professorRoutes);
 app.use("/api", authMiddleware(userPoolId, region), sentimentRoutes);
+app.use("/api", authMiddleware(userPoolId, region), sagemakerRoutes);
 
 app.listen(3000, () => {
   console.log("Master API running on http://localhost:3000");

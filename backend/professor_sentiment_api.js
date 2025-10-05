@@ -51,7 +51,7 @@ router.post("/professors/sentiment", async (req, res) => {
     const professorItem = profResult.Items[0];
     const professorId = professorItem.professor_id;
 
-    // Step 2: Check cache
+    // Step 2: Check if cached sentiment data exists and is still fresh
     const sentimentResult = await dynamodb.send(
       new GetCommand({
         TableName: TABLE_NAME,
@@ -75,7 +75,7 @@ router.post("/professors/sentiment", async (req, res) => {
       });
     }
 
-    // Step 3: Fetch reviews
+    // Step 3: Fetch all reviews for this professor
     const reviewsResult = await dynamodb.send(
       new QueryCommand({
         TableName: TABLE_NAME,
@@ -85,40 +85,44 @@ router.post("/professors/sentiment", async (req, res) => {
       })
     );
 
-    const comments = reviewsResult.Items.map(r => r.comment).filter(Boolean);
-    if (comments.length === 0)
+    const reviews = reviewsResult.Items || [];
+    if (reviews.length === 0)
       return res
         .status(404)
         .json({ error: "No reviews found for sentiment analysis" });
 
-    // Step 4: Analyze each comment
+    // Step 4: Analyze each comment using AWS Comprehend
     const sentimentCounts = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
     const detailedResults = [];
 
-    for (const comment of comments) {
+    for (const review of reviews) {
+      if (!review.comment) continue;
+
       const command = new DetectSentimentCommand({
-        Text: comment,
+        Text: review.comment,
         LanguageCode: "en"
       });
       const response = await comprehend.send(command);
 
       sentimentCounts[response.Sentiment]++;
+
       detailedResults.push({
-        review: comment,
+        course: review.course || "Unknown",
+        review: review.comment,
         sentiment: response.Sentiment,
         scores: response.SentimentScore
       });
     }
 
-    // Step 5: Save results to DynamoDB
+    // Step 5: Save sentiment results to DynamoDB
     const resultItem = {
       professor_id: professorId,
       sort_key: `SENTIMENT#${professorId}`,
       type: "sentiment",
       name: profName,
       sentimentBreakdown: sentimentCounts,
-      detailedSentiments: detailedResults, // ✅ store for reuse
-      totalReviews: comments.length,
+      detailedSentiments: detailedResults,
+      totalReviews: reviews.length,
       last_analyzed: new Date().toISOString()
     };
 
@@ -129,12 +133,12 @@ router.post("/professors/sentiment", async (req, res) => {
       })
     );
 
-    // Step 6: Return response
+    // Step 6: Return full response
     res.json({
       professor: profName,
       sentimentBreakdown: sentimentCounts,
       detailedSentiments: detailedResults,
-      totalReviews: comments.length,
+      totalReviews: reviews.length,
       source: "fresh",
       last_analyzed: resultItem.last_analyzed
     });
