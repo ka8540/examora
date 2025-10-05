@@ -13,7 +13,7 @@ const axios = require("axios");
   });
 
   // Step 2: Search professor by name
-  const professorName = "Kenneth Martinez";
+  const professorName = "Thomas Kinsman";
   await page.waitForSelector('input[placeholder="Professor name"]');
   await page.fill('input[placeholder="Professor name"]', professorName);
   await page.keyboard.press("Enter");
@@ -100,13 +100,12 @@ const axios = require("axios");
 );
 
   // Step 7: Send to API
-    await axios.post("http://localhost:3000/api/professors", {
-    professor: professorName,
-    profile: profLink,
-    reviews: reviews,
-    });
-
-    console.log("✅ Data sent to API and stored in DB");
+  fs.writeFileSync(
+      "professor_reviews.json",
+      JSON.stringify({ professor: professorName, profile: profLink, reviews }, null, 2)
+    );
+  
+    console.log(`✅ Saved ${reviews.length} reviews for ${professorName}`);
 
   await browser.close();
 })();

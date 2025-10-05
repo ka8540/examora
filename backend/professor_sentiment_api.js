@@ -35,7 +35,7 @@ router.post("/professors/sentiment", async (req, res) => {
     return res.status(400).json({ error: "Professor name required" });
 
   try {
-    // Step 1: Find professor by name (scan since no GSI yet)
+    // Step 1: Find professor by name
     const profResult = await dynamodb.send(
       new ScanCommand({
         TableName: TABLE_NAME,
@@ -51,7 +51,7 @@ router.post("/professors/sentiment", async (req, res) => {
     const professorItem = profResult.Items[0];
     const professorId = professorItem.professor_id;
 
-    // Step 2: Check if sentiment already exists and is fresh
+    // Step 2: Check cache
     const sentimentResult = await dynamodb.send(
       new GetCommand({
         TableName: TABLE_NAME,
@@ -69,12 +69,13 @@ router.post("/professors/sentiment", async (req, res) => {
       return res.json({
         professor: profName,
         sentimentBreakdown: sentimentResult.Item.sentimentBreakdown,
+        detailedSentiments: sentimentResult.Item.detailedSentiments || [],
         source: "cached",
         last_analyzed: sentimentResult.Item.last_analyzed
       });
     }
 
-    // Step 3: Fetch all reviews for that professor_id
+    // Step 3: Fetch reviews
     const reviewsResult = await dynamodb.send(
       new QueryCommand({
         TableName: TABLE_NAME,
@@ -90,8 +91,9 @@ router.post("/professors/sentiment", async (req, res) => {
         .status(404)
         .json({ error: "No reviews found for sentiment analysis" });
 
-    // Step 4: Run sentiment analysis
+    // Step 4: Analyze each comment
     const sentimentCounts = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
+    const detailedResults = [];
 
     for (const comment of comments) {
       const command = new DetectSentimentCommand({
@@ -99,20 +101,27 @@ router.post("/professors/sentiment", async (req, res) => {
         LanguageCode: "en"
       });
       const response = await comprehend.send(command);
+
       sentimentCounts[response.Sentiment]++;
+      detailedResults.push({
+        review: comment,
+        sentiment: response.Sentiment,
+        scores: response.SentimentScore
+      });
     }
 
+    // Step 5: Save results to DynamoDB
     const resultItem = {
       professor_id: professorId,
       sort_key: `SENTIMENT#${professorId}`,
       type: "sentiment",
       name: profName,
       sentimentBreakdown: sentimentCounts,
+      detailedSentiments: detailedResults, // ✅ store for reuse
       totalReviews: comments.length,
       last_analyzed: new Date().toISOString()
     };
 
-    // Step 5: Save sentiment results
     await dynamodb.send(
       new PutCommand({
         TableName: TABLE_NAME,
@@ -120,10 +129,11 @@ router.post("/professors/sentiment", async (req, res) => {
       })
     );
 
-    // Step 6: Return fresh result
+    // Step 6: Return response
     res.json({
       professor: profName,
       sentimentBreakdown: sentimentCounts,
+      detailedSentiments: detailedResults,
       totalReviews: comments.length,
       source: "fresh",
       last_analyzed: resultItem.last_analyzed
