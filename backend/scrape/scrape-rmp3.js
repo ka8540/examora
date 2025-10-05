@@ -65,33 +65,22 @@ const fs = require("fs");
   }
 
   // Step 6: Scrape all reviews
- const reviews = await page.$$eval('[class*="Rating__RatingBody"]', (nodes) =>
-  nodes.map((review) => {
-    const course =
-      review.querySelector('[class*="RatingHeader__StyledClass"]')?.innerText || "N/A";
-    const date =
-      review.querySelector('[class*="RatingHeader__RatingTimeStamp"]')?.innerText || "N/A";
-    const comment =
-      review.querySelector('[class*="Comments__StyledComments"]')?.innerText || "N/A";
+  const reviews = await page.$$eval('[class*="Rating__RatingBody"]', (nodes) =>
+    nodes.map((review) => {
+      const course =
+        review.querySelector('[class*="RatingHeader__StyledClass"]')?.innerText || "N/A";
+      const date =
+        review.querySelector('[class*="RatingHeader__RatingTimeStamp"]')?.innerText || "N/A";
+      const comment =
+        review.querySelector('[class*="Comments__StyledComments"]')?.innerText || "N/A";
+      const quality =
+        review.querySelector('[class*="CardNumRating__CardNumRatingNumber"]')?.innerText || "N/A";
+      const difficulty =
+        review.querySelector('[class*="Difficulty__StyledDifficultyScore"]')?.innerText || "N/A";
 
-    // Find both quality and difficulty by their labels
-    let quality = "N/A";
-    let difficulty = "N/A";
-    const ratingBlocks = review.querySelectorAll('[class*="CardNumRating__StyledCardNumRating"]');
-
-    ratingBlocks.forEach((block) => {
-      const label = block.querySelector('[class*="CardNumRating__CardNumRatingHeader"]')?.innerText;
-      const value = block.querySelector('[class*="CardNumRating__CardNumRatingNumber"]')?.innerText;
-      if (label && value) {
-        if (label.includes("Quality")) quality = value;
-        if (label.includes("Difficulty")) difficulty = value;
-      }
-    });
-
-    return { course, date, quality, difficulty, comment };
-  })
-);
-
+      return { course, date, quality, difficulty, comment };
+    })
+  );
 
   // Step 7: Save JSON file
   fs.writeFileSync(

@@ -13,3 +13,4 @@ playwright.config.ts
 backend/scraper_api/__pycache__/
 backend/scraper_api/
 node_modules/
+
