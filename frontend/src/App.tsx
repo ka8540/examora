@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import UserRoleSelect from "./pages/UserRoleSelect";
+import ProfessorScrapeSetup from "./pages/ProfessorScrapeSetup";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +20,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/role" element={<UserRoleSelect />} />
+          <Route path="/professor-dashboard" element={<ProfessorScrapeSetup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -45,7 +45,7 @@ const AuthPage = () => {
       const data = await callApi("/login", { email, password });
       localStorage.setItem("examora_token", data.token);
       setMessage("✅ Login successful! Redirecting...");
-      setTimeout(() => navigate("/"), 1500);
+      setTimeout(() => navigate("/role"), 1500);
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {
@@ -274,7 +274,7 @@ const AuthPage = () => {
             <Button
               variant="ghost"
               className="text-muted-foreground hover:text-foreground"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/role")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
             </Button>
