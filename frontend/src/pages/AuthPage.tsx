@@ -4,8 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
-import { login, signup, confirmSignup } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/auth";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -21,31 +22,47 @@ const AuthPage = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // ✅ Handle login
+  // Helper to call API
+  const callApi = async (endpoint: string, body: any) => {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    return data;
+  };
+
+  // ✅ Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setMessage("");
+
     try {
-      const token = await login(email, password);
-      localStorage.setItem("examora_token", token);
-      setMessage("Login successful! Redirecting...");
-      setTimeout(() => navigate("/"), 1200);
+      const data = await callApi("/login", { email, password });
+      localStorage.setItem("examora_token", data.token);
+      setMessage("✅ Login successful! Redirecting...");
+      setTimeout(() => navigate("/"), 1500);
     } catch (err: any) {
-      setError(err.message || "Failed to log in. Please try again.");
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Handle signup
+  // ✅ Handle Signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setMessage("");
+
     try {
-      await signup(email, password, name);
-      setMessage("Signup successful! Please check your email for the verification code.");
+      await callApi("/signup", { email, password, name });
+      setMessage("✅ Signup successful! Check your email for a verification code.");
       setMode("verify");
     } catch (err: any) {
       setError(err.message || "Signup failed. Try again.");
@@ -54,14 +71,16 @@ const AuthPage = () => {
     }
   };
 
-  // ✅ Handle verification
+  // ✅ Handle Verification
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setMessage("");
+
     try {
-      await confirmSignup(email, code);
-      setMessage("Account verified! You can now log in.");
+      await callApi("/confirm", { email, code });
+      setMessage("🎉 Account verified! You can now log in.");
       setTimeout(() => {
         setMode("login");
         setMessage("");
@@ -73,7 +92,7 @@ const AuthPage = () => {
     }
   };
 
-  // --- Dynamic content based on mode ---
+  // --- Dynamic UI ---
   const renderForm = () => {
     switch (mode) {
       case "signup":
@@ -83,14 +102,13 @@ const AuthPage = () => {
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
-                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="bg-background/50"
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -99,10 +117,10 @@ const AuthPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="professor@university.edu"
-                className="bg-background/50"
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -110,7 +128,6 @@ const AuthPage = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background/50"
                 required
               />
             </div>
@@ -118,7 +135,7 @@ const AuthPage = () => {
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             {message && <p className="text-green-500 text-sm text-center">{message}</p>}
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing Up..." : "Sign Up"}
             </Button>
 
@@ -136,43 +153,54 @@ const AuthPage = () => {
 
       case "verify":
         return (
-          <form className="space-y-4" onSubmit={handleVerify}>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="professor@university.edu"
-                className="bg-background/50"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="code">Verification Code</Label>
-              <Input
-                id="code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Enter the 6-digit code"
-                className="bg-background/50"
-                required
-              />
+          <div className="space-y-4 text-center">
+            <div className="bg-background/50 p-6 rounded-lg border border-border/50 shadow-md">
+              <h2 className="text-lg font-semibold text-primary mb-2">
+                Verify Your Account
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Enter the 6-digit verification code sent to your email.
+              </p>
+              <form onSubmit={handleVerify} className="space-y-3">
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  required
+                />
+                <Input
+                  id="code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Verification Code"
+                  required
+                />
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {message && <p className="text-green-500 text-sm">{message}</p>}
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify Account"}
+                </Button>
+              </form>
             </div>
 
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            {message && <p className="text-green-500 text-sm text-center">{message}</p>}
-
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? "Verifying..." : "Verify Account"}
-            </Button>
-          </form>
+            <p className="text-sm text-muted-foreground">
+              Already verified?{" "}
+              <span
+                className="text-primary cursor-pointer hover:underline"
+                onClick={() => setMode("login")}
+              >
+                Log In
+              </span>
+            </p>
+          </div>
         );
 
       default:
-        // Login form
         return (
           <form className="space-y-4" onSubmit={handleLogin}>
             <div className="space-y-2">
@@ -183,7 +211,6 @@ const AuthPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="professor@university.edu"
-                className="bg-background/50"
                 required
               />
             </div>
@@ -195,7 +222,6 @@ const AuthPage = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background/50"
                 required
               />
             </div>
@@ -203,7 +229,7 @@ const AuthPage = () => {
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             {message && <p className="text-green-500 text-sm text-center">{message}</p>}
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing In..." : "Sign In"}
             </Button>
 
@@ -237,7 +263,7 @@ const AuthPage = () => {
               ? "Sign in to access AI-powered course insights"
               : mode === "signup"
               ? "Join Examora and unlock smarter learning insights"
-              : "Enter the verification code sent to your email"}
+              : "Complete your registration below"}
           </p>
         </div>
 

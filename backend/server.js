@@ -1,12 +1,22 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const authMiddleware = require("./authMiddleware");
 
-dotenv.config(); 
+dotenv.config();
 
 const app = express();
 app.use(bodyParser.json());
+
+app.use(
+  cors({
+    origin: ["http://localhost:8080"], // Vite frontend
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // optional, only if using cookies
+  })
+);
 
 // Get env vars
 const userPoolId = process.env.COGNITO_USER_POOL_ID;
