@@ -64,9 +64,9 @@ const ProfessorScrapeSetup = () => {
       const data = await res.json().catch(() => ({}));
       // data could hold { jobId, professor_id, ... } depending on your scraper
       setStepMsg("Wrapping up…");
-      // Small beat so the user sees the final message
+      // Small beat so the user sees the final message, then view insights
       setTimeout(() => {
-        navigate("/professor-dashboard"); // adjust to your actual route
+        navigate(`/professor-insights?name=${encodeURIComponent(name)}`);
       }, 800);
     } catch (e: any) {
       setError(e.message || "Something went wrong while scraping.");
@@ -86,48 +86,48 @@ const ProfessorScrapeSetup = () => {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,hsl(var(--primary)/0.20)_0%,transparent_55%)]" />
 
       <Card className="relative z-10 w-full max-w-xl px-8 py-10 space-y-8 animate-fade-in bg-[var(--gradient-card)] border-border/50 shadow-[var(--shadow-card)]">
-            <div className="text-center space-y-3">
-                <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient"
-                >
-                Welcome to Your Review Insights
-                </motion.h1>
-                <p className="text-muted-foreground">
-                This tool helps you view and analyze your public student feedback securely in one place.  
-                Please confirm your full name so we can gather the latest data for your profile.
-                </p>
-            </div>
+        <div className="text-center space-y-3">
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient"
+          >
+            Welcome to Your Review Insights
+          </motion.h1>
+          <p className="text-muted-foreground">
+            This tool helps you view and analyze your public student feedback securely in one place.
+            Please confirm your full name so we can gather the latest data for your profile.
+          </p>
+        </div>
 
-            <div className="space-y-4">
-                <div className="space-y-2">
-                <Label htmlFor="prof-name">Your Full Name</Label>
-                <Input
-                    id="prof-name"
-                    placeholder="e.g., Dr. John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="bg-background/50"
-                    disabled={loading}
-                />
-                </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="prof-name">Your Full Name</Label>
+            <Input
+              id="prof-name"
+              placeholder="e.g., Dr. John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-background/50"
+              disabled={loading}
+            />
+          </div>
 
-                {error && (
-                <p className="text-sm text-red-500 text-center">{error}</p>
-                )}
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
+          )}
 
-                <Button
-                onClick={startScrape}
-                disabled={loading || !name.trim()}
-                className="w-full"
-                size="lg"
-                >
-                {loading ? "Preparing your insights…" : "View My Insights"}
-                </Button>
-            </div>
-        </Card>
+          <Button
+            onClick={startScrape}
+            disabled={loading || !name.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {loading ? "Preparing your insights…" : "View My Insights"}
+          </Button>
+        </div>
+      </Card>
 
 
       {/* Loading overlay */}

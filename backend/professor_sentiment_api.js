@@ -28,7 +28,7 @@ function isOlderThanOneMonth(timestamp) {
 }
 
 router.post("/professors/sentiment", async (req, res) => {
-  const { professor, name } = req.body;
+  const { professor, name, force } = req.body;
   const profName = name || professor;
 
   if (!profName)
@@ -63,13 +63,16 @@ router.post("/professors/sentiment", async (req, res) => {
     );
 
     if (
+      !force &&
       sentimentResult.Item &&
-      !isOlderThanOneMonth(sentimentResult.Item.last_analyzed)
+      !isOlderThanOneMonth(sentimentResult.Item.last_analyzed) &&
+      Array.isArray(sentimentResult.Item.detailedSentiments) &&
+      sentimentResult.Item.detailedSentiments.length > 0
     ) {
       return res.json({
         professor: profName,
         sentimentBreakdown: sentimentResult.Item.sentimentBreakdown,
-        detailedSentiments: sentimentResult.Item.detailedSentiments || [],
+        detailedSentiments: sentimentResult.Item.detailedSentiments,
         source: "cached",
         last_analyzed: sentimentResult.Item.last_analyzed
       });
