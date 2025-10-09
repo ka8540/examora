@@ -14,6 +14,8 @@ const textract = new TextractClient({ region });
 const comprehend = new ComprehendClient({ region });
 const bedrock = new BedrockRuntimeClient({ region });
 
+
+
 function normalizeAndRankPhrases(phrases) {
     const counts = new Map();
     for (const p of phrases) {
@@ -63,36 +65,85 @@ router.post("/syllabus/topics", upload.single("file"), async (req, res) => {
             return res.status(200).json({ topics: [], textLength: fullText.length });
 
         async function summarizeTopics(text) {
-            const prompt = `You are an academic assistant. Read this course syllabus text and
-            extract 10 concise, subject-relevant topics that describe what is TAUGHT or COVERED in the course.
-            Avoid filler words like instructor, project, grading, students, class, etc.
-            Return topics as a comma-separated list.
-            Text:\n\n${text.slice(0, 8000)}`;
+            try {
+                console.log("Starting topic extraction for text length:", text.length);
 
-            const cmd = new InvokeModelCommand({
-                modelId: "anthropic.claude-3-haiku-20240307-v1:0",
-                contentType: "application/json",
-                accept: "application/json",
-                body: JSON.stringify({
-                anthropic_version: "bedrock-2023-05-31",
-                max_tokens: 200,
-                temperature: 0,
-                messages: [{ role: "user", content: [{ type: "text", text: prompt }] }]
-                }),
-            });
+                const prompt = `You are an academic assistant. Read this course syllabus text and
+                extract 10 concise, subject-relevant topics that describe what is TAUGHT or COVERED in the course.
+                Avoid filler words like instructor, project, grading, students, class, etc.
+                Return topics as a comma-separated list.
+                Text:\n\n${text.slice(0, 8000)}`;
 
-            const resp = await bedrock.send(cmd);
-            const body = JSON.parse(new TextDecoder().decode(resp.body));
-            const textOut = body?.content?.[0]?.text || "";
-            return textOut.split(/[,\\n;]/).map(t => t.trim()).filter(Boolean).slice(0, 10);
+                const cmd = new InvokeModelCommand({
+                    modelId: "anthropic.claude-3-haiku-20240307-v1:0",
+                    contentType: "application/json",
+                    accept: "application/json",
+                    body: JSON.stringify({
+                        anthropic_version: "bedrock-2023-05-31",
+                        max_tokens: 200,
+                        temperature: 0,
+                        messages: [{ role: "user", content: [{ type: "text", text: prompt }] }]
+                    }),
+                });
+
+                console.log("Sending request to Bedrock...");
+
+                // Add timeout to prevent hanging
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Bedrock API timeout after 30 seconds')), 30000);
+                });
+
+                const resp = await Promise.race([
+                    bedrock.send(cmd),
+                    timeoutPromise
+                ]);
+
+                console.log("Bedrock response received");
+                const body = JSON.parse(new TextDecoder().decode(resp.body));
+                console.log("Bedrock response body:", body);
+                const textOut = body?.content?.[0]?.text || "";
+                console.log("Extracted text:", textOut);
+
+                if (!textOut) {
+                    console.log("No text extracted from Bedrock response");
+                    return ["No topics could be extracted"];
+                }
+
+                const topics = textOut.split(/[,\\n;]/).map(t => t.trim()).filter(Boolean).slice(0, 10);
+                console.log("Final topics:", topics);
+                return topics;
+
+            } catch (error) {
+                console.error("Error in summarizeTopics:", error);
+                // Return a fallback response instead of throwing
+                return ["Error extracting topics - please try again"];
             }
+        }
 
-            const topics = await summarizeTopics(fullText);
-            return res.json({ topics, textLength: fullText.length });
+        console.log("About to call summarizeTopics...");
+        const topics = await summarizeTopics(fullText);
+        console.log("Topics extracted:", topics);
 
-        } catch (err) {
-            console.error("Syllabus topics error:", err);
-            res.status(500).json({ error: "Failed to extract topics" });
+        // Always return a response, even if topics extraction failed
+        return res.json({
+            topics: topics || ["Topics extraction in progress"],
+            textLength: fullText.length,
+            status: "success"
+        });
+
+    } catch (err) {
+        console.error("Syllabus topics error:", err);
+        console.error("Error details:", {
+            message: err.message,
+            code: err.code,
+            name: err.name,
+            stack: err.stack
+        });
+        res.status(500).json({
+            error: "Failed to extract topics",
+            details: err.message,
+            code: err.code || 'UNKNOWN_ERROR'
+        });
     }
 });
 

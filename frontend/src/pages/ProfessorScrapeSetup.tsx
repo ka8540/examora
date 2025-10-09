@@ -66,7 +66,7 @@ const ProfessorScrapeSetup = () => {
       setStepMsg("Wrapping up…");
       // Small beat so the user sees the final message, then view insights
       setTimeout(() => {
-        navigate(`/professor-insights?name=${encodeURIComponent(name)}`);
+        navigate(`/professor-assistant?name=${encodeURIComponent(name)}`);
       }, 800);
     } catch (e: any) {
       setError(e.message || "Something went wrong while scraping.");
