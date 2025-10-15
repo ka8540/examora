@@ -98,6 +98,22 @@ router.post("/professors/sentiment", async (req, res) => {
     const sentimentCounts = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
     const detailedResults = [];
 
+    const total = Object.values(sentimentCounts).reduce((a, b) => a + b, 0);
+    const posPct = total ? sentimentCounts.POSITIVE / total : 0;
+    const negPct = total ? sentimentCounts.NEGATIVE / total : 0;
+    const mixPct = total ? sentimentCounts.MIXED / total : 0;
+
+    let tier = "Medium"; // default
+
+    // Higher negativity means harder course
+    if (negPct >= 0.7) 
+      tier = "Hard";
+    else if (negPct >= 0.4) 
+      tier = "Medium";
+    else 
+      tier = "Easy";
+
+
     for (const review of reviews) {
       if (!review.comment) continue;
 
@@ -126,7 +142,8 @@ router.post("/professors/sentiment", async (req, res) => {
       sentimentBreakdown: sentimentCounts,
       detailedSentiments: detailedResults,
       totalReviews: reviews.length,
-      last_analyzed: new Date().toISOString()
+      last_analyzed: new Date().toISOString(),
+      difficultyTier: tier
     };
 
     await dynamodb.send(
@@ -142,6 +159,7 @@ router.post("/professors/sentiment", async (req, res) => {
       sentimentBreakdown: sentimentCounts,
       detailedSentiments: detailedResults,
       totalReviews: reviews.length,
+      difficultyTier: tier,
       source: "fresh",
       last_analyzed: resultItem.last_analyzed
     });

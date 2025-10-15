@@ -1,12 +1,13 @@
 import { useLocation } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default function ProfessorAssistant() {
   const { search } = useLocation();
@@ -19,6 +20,33 @@ export default function ProfessorAssistant() {
   const [questions, setQuestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // 🔹 Auto-fetch difficulty tier from backend sentiment API
+  useEffect(() => {
+    async function fetchTier() {
+      try {
+        const token = localStorage.getItem("examora_token");
+        const res = await fetch(`${API_BASE_URL}/api/professors/sentiment`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.difficultyTier) {
+          setTier(data.difficultyTier);
+        }
+      } catch (err) {
+        console.error("Tier fetch failed:", err);
+      }
+    }
+
+    fetchTier();
+  }, [name]);
+
+  // 🔹 Generate questions
   async function handleGenerate() {
     if (!file) return;
     setUploading(true);
@@ -55,9 +83,25 @@ export default function ProfessorAssistant() {
             👋 Hello Prof. {name}, how can I help you today?
           </h1>
         </CardHeader>
+
         <CardContent className="space-y-5">
+          {/* Difficulty Tier Section */}
           <div>
-            <Label htmlFor="tier">Select difficulty tier</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="tier">Difficulty tier (auto-detected)</Label>
+              <span
+                className={
+                  tier === "Hard"
+                    ? "text-red-500 font-medium"
+                    : tier === "Medium"
+                    ? "text-yellow-500 font-medium"
+                    : "text-green-500 font-medium"
+                }
+              >
+                {tier}
+              </span>
+            </div>
+
             <select
               id="tier"
               value={tier}
@@ -70,8 +114,11 @@ export default function ProfessorAssistant() {
             </select>
           </div>
 
+          {/* File Upload */}
           <div>
-            <Label htmlFor="examUpload">Upload your exam or syllabus (PDF)</Label>
+            <Label htmlFor="examUpload">
+              Upload your exam or syllabus (PDF)
+            </Label>
             <Input
               id="examUpload"
               type="file"
@@ -80,15 +127,24 @@ export default function ProfessorAssistant() {
             />
           </div>
 
-          <Button onClick={handleGenerate} disabled={!file || uploading} className="w-full">
+          {/* Generate Button */}
+          <Button
+            onClick={handleGenerate}
+            disabled={!file || uploading}
+            className="w-full"
+          >
             {uploading ? "Generating questions..." : "Generate Exam Questions"}
           </Button>
 
+          {/* Error */}
           {error && <p className="text-sm text-red-500">{error}</p>}
 
+          {/* Generated Questions */}
           {questions.length > 0 && (
             <div className="space-y-2 mt-4">
-              <h2 className="text-lg font-semibold">Generated Questions ({tier})</h2>
+              <h2 className="text-lg font-semibold">
+                Generated Questions ({tier})
+              </h2>
               <Textarea
                 value={questions.map((q, i) => `${i + 1}. ${q}`).join("\n\n")}
                 rows={12}
