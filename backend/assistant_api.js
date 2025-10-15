@@ -7,9 +7,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 // POST /api/assistant/upload
 router.post("/assistant/upload", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "Missing file" });
+    if (!req.file) 
+      return res.status(400).json({ error: "Missing file" });
 
-    console.log("📄 Received exam upload:", {
+    console.log("Received exam upload:", {
       filename: req.file.originalname,
       size: req.file.size,
       mimetype: req.file.mimetype,

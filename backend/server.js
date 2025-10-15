@@ -33,6 +33,8 @@ const sentimentRoutes = require("./professor_sentiment_api");
 const sagemakerRoutes = require("./professor_sagemaker_api");
 const syllabusRoutes = require("./syllabus_api");
 const examTierRoutes = require("./exam_tier_api");
+const assistantQuestionsRoutes = require("./assistant_questions_api");
+
 
 // Public routes (no token needed)
 app.use("/auth", signupRoutes);
@@ -47,6 +49,7 @@ app.use("/api", authMiddleware(userPoolId, region), sagemakerRoutes);
 app.use("/api", authMiddleware(userPoolId, region), syllabusRoutes);
 app.use("/api", authMiddleware(userPoolId, region), assistantRoutes);
 app.use("/api", authMiddleware(userPoolId, region), examTierRoutes);
+app.use("/api", authMiddleware(userPoolId, region), assistantQuestionsRoutes);
 
 app.listen(3000, () => {
   console.log("Master API running on http://localhost:3000");
