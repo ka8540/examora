@@ -27,6 +27,21 @@ function isOlderThanOneMonth(timestamp) {
   return new Date(timestamp) < oneMonthAgo;
 }
 
+// Helper: Consistent Tier Logic
+function calculateTier(sentimentCounts) {
+  const total = Object.values(sentimentCounts).reduce((a, b) => a + b, 0);
+  const negPct = total ? sentimentCounts.NEGATIVE / total : 0;
+
+  // REVISED LOGIC:
+  // > 60% Negative -> Students say "Too Hard" -> Suggest "Easy" exam
+  // 40-60% Negative -> Mixed -> Suggest "Medium" exam
+  // < 40% Negative -> Students say "Easy" -> Suggest "Hard" exam
+  
+  if (negPct > 0.60) return "Easy";
+  if (negPct >= 0.40) return "Medium";
+  return "Hard";
+}
+
 router.post("/professors/sentiment", async (req, res) => {
   const { professor, name, force } = req.body;
   const profName = name || professor;
@@ -69,10 +84,15 @@ router.post("/professors/sentiment", async (req, res) => {
       Array.isArray(sentimentResult.Item.detailedSentiments) &&
       sentimentResult.Item.detailedSentiments.length > 0
     ) {
+      // HOTFIX: Recalculate tier from the raw counts to ignore old cached "Easy" labels
+      const freshTier = calculateTier(sentimentResult.Item.sentimentBreakdown);
+
       return res.json({
         professor: profName,
         sentimentBreakdown: sentimentResult.Item.sentimentBreakdown,
         detailedSentiments: sentimentResult.Item.detailedSentiments,
+        difficultyTier: freshTier, // Use the recalculated tier
+        totalReviews: sentimentResult.Item.totalReviews || 0,
         source: "cached",
         last_analyzed: sentimentResult.Item.last_analyzed
       });
@@ -98,22 +118,6 @@ router.post("/professors/sentiment", async (req, res) => {
     const sentimentCounts = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
     const detailedResults = [];
 
-    const total = Object.values(sentimentCounts).reduce((a, b) => a + b, 0);
-    const posPct = total ? sentimentCounts.POSITIVE / total : 0;
-    const negPct = total ? sentimentCounts.NEGATIVE / total : 0;
-    const mixPct = total ? sentimentCounts.MIXED / total : 0;
-
-    let tier = "Medium"; // default
-
-    // Higher negativity means harder course
-    if (negPct >= 0.7) 
-      tier = "Hard";
-    else if (negPct >= 0.4) 
-      tier = "Medium";
-    else 
-      tier = "Easy";
-
-
     for (const review of reviews) {
       if (!review.comment) continue;
 
@@ -132,6 +136,8 @@ router.post("/professors/sentiment", async (req, res) => {
         scores: response.SentimentScore
       });
     }
+
+    const tier = calculateTier(sentimentCounts);
 
     // Step 5: Save sentiment results to DynamoDB
     const resultItem = {

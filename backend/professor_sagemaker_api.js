@@ -7,7 +7,8 @@ const {
   GetCommand
 } = require("@aws-sdk/lib-dynamodb");
 
-const client = new DynamoDBClient({ region: "us-east-1" });
+const region = process.env.AWS_REGION || "us-east-1";
+const client = new DynamoDBClient({ region });
 const dynamodb = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = "ProfessorsReviews";

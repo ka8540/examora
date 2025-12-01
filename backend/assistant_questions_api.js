@@ -4,7 +4,7 @@ const pdfParse = require("pdf-parse");
 const multer = require("multer");
 
 const router = express.Router();
-const region = "us-east-2";
+const region = process.env.AWS_REGION || "us-east-1";
 const bedrock = new BedrockRuntimeClient({ region });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -13,9 +13,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.post("/assistant/questions", upload.single("file"), async (req, res) => {
   try {
     const { tier } = req.body;
-    if (!req.file) 
+    if (!req.file)
       return res.status(400).json({ error: "Missing file" });
-    if (!tier) 
+    if (!tier)
       return res.status(400).json({ error: "Missing difficulty tier" });
 
     // 1️. Extract text from the uploaded PDF
@@ -32,8 +32,9 @@ router.post("/assistant/questions", upload.single("file"), async (req, res) => {
       `;
 
     // 3. Call Bedrock (Claude 3 Haiku)
+    // Use standard model ID format (not inference profile ARN) for portability
     const cmd = new InvokeModelCommand({
-      modelId: "arn:aws:bedrock:us-east-2:985539782333:inference-profile/us.anthropic.claude-3-haiku-20240307-v1:0",
+      modelId: "anthropic.claude-3-haiku-20240307-v1:0",
       contentType: "application/json",
       accept: "application/json",
       body: JSON.stringify({
