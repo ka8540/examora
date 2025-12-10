@@ -17,7 +17,7 @@ const UserRoleSelect = () => {
 
   const handleSelect = (role: string) => {
     localStorage.setItem("examora_role", role);
-    if (role === "student") navigate("/student-dashboard");
+    if (role === "student") navigate("/student-analysis");
     else navigate("/professor-dashboard");
   };
 

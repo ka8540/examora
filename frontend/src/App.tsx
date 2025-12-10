@@ -8,7 +8,8 @@ import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import UserRoleSelect from "./pages/UserRoleSelect";
 import ProfessorScrapeSetup from "./pages/ProfessorScrapeSetup";
-
+import StudentProfessorScrapeSetup from "./pages/StudentProfessorScrapeSetup";
+import ProfessorAnalysisDashboard from "./pages/ProfessorAnalysisDashboard";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -22,6 +23,8 @@ const App = () => (
           <Route path="/login" element={<AuthPage />} />
           <Route path="/role" element={<UserRoleSelect />} />
           <Route path="/professor-dashboard" element={<ProfessorScrapeSetup />} />
+          <Route path="/student-analysis" element={<StudentProfessorScrapeSetup />} />
+          <Route path="/student-professor-analysis" element={<ProfessorAnalysisDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
